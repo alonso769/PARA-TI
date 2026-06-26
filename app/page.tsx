@@ -108,6 +108,12 @@ export default function Home() {
           >
             Ver Catálogo <ArrowRight className="w-4 h-4 animate-pulse" />
           </a>
+          <a 
+              href="/armalo"
+              className="px-8 py-4 backdrop-blur-md bg-rose-500/20 border border-rose-500/50 text-white text-sm uppercase tracking-widest rounded-full inline-flex items-center gap-3 hover:bg-rose-500 hover:border-rose-500 transition-all duration-300 cursor-pointer"
+            >
+              Arma tu Ramo <Sparkles className="w-4 h-4" />
+            </a>
         </div>
       </section>
 
