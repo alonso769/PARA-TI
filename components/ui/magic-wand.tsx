@@ -11,7 +11,7 @@ type MagicWandContextType = {
 
 const MagicWandContext = createContext<MagicWandContextType | undefined>(undefined)
 
-function useMagicWand() {
+export function useMagicWand() {
     const context = useContext(MagicWandContext)
     if (!context) {
         throw new Error("Magic Wand components must be used within a MagicWandContainer")
@@ -29,45 +29,35 @@ export function MagicWandContainer({ children, className, wandClassName }: Magic
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
     const x = useMotionValue(0)
     const y = useMotionValue(0)
-    const rotation = useMotionValue(0)
 
     const springX = useSpring(x, { damping: 25, stiffness: 200 })
     const springY = useSpring(y, { damping: 25, stiffness: 200 })
-    const springRotation = useSpring(rotation, { damping: 25, stiffness: 200 })
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            const { clientX, clientY } = e
-            const { innerWidth, innerHeight } = window
-            const modifiedX = clientX * 1.3 + innerWidth * -0.15
-            const modifiedY = clientY * 0.4 - innerHeight * 0.1
-            const rotationValue = (clientX / innerWidth) * 20 - 10
-            x.set(modifiedX)
-            y.set(modifiedY)
-            rotation.set(rotationValue)
-            setMousePosition({ x: modifiedX, y: modifiedY })
+            x.set(e.clientX)
+            y.set(e.clientY)
+            setMousePosition({ x: e.clientX, y: e.clientY })
         }
         window.addEventListener("mousemove", handleMouseMove)
         return () => window.removeEventListener("mousemove", handleMouseMove)
-    }, [x, y, rotation])
+    }, [x, y])
 
     return (
         <MagicWandContext.Provider value={{ mousePosition }}>
-            <div className={cn("flex", className)}>
+            <div className={cn("flex w-full h-full min-h-[400px]", className)}>
+                {/* Nuevo "Pincel de Luz" en lugar de la varita */}
                 <motion.div
                     className={cn(
-                        "w-[10vmin] aspect-[1/10] absolute left-[5%] top-[20%] -translate-x-1/2 z-[100] rounded-[3vmin] shadow-[0vmin_1vmin_4vmin_rgba(0,0,0,0.8)] overflow-hidden pointer-events-none",
+                        "w-[30vmin] aspect-square absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 z-[100] rounded-full mix-blend-screen pointer-events-none blur-3xl",
                         wandClassName,
                     )}
                     style={{
                         x: springX,
                         y: springY,
-                        rotate: springRotation,
-                        background: "linear-gradient(to right, rgb(26,24,28) 10%, rgb(42,40,44) 45% 55%, rgb(26,24,28) 90%)",
+                        background: "radial-gradient(circle, rgba(251,113,133,0.15) 0%, rgba(0,0,0,0) 70%)",
                     }}
-                >
-                    <div className="h-[20%] w-full" style={{ background: "linear-gradient(to right, rgb(212,221,236) 10%, rgb(255,255,255) 45% 55%, rgb(212,221,236) 90%)" }}></div>
-                </motion.div>
+                />
                 {children}
             </div>
         </MagicWandContext.Provider>
@@ -92,7 +82,7 @@ export function MagicWandTile({ image, icon, className, onClick }: MagicWandTile
     const [tileState, setTileState] = useState({ opacity: 0, blur: 10 })
 
     let IconComponent: LucideIcon = Image
-    let iconClassName = "text-[15vmin] text-white/10"
+    let iconClassName = "text-[8vmin] text-white/30" // Íconos más sutiles
 
     if (icon) {
         if (typeof icon === "function") {
@@ -109,10 +99,19 @@ export function MagicWandTile({ image, icon, className, onClick }: MagicWandTile
             const rect = tileRef.current?.getBoundingClientRect()
             if (!rect) return
             const relativeMouseX = mousePosition.x - rect.left
-            const mouseXAsDecimal = Math.max(0, Math.min(relativeMouseX / rect.width, 1))
+            const relativeMouseY = mousePosition.y - rect.top
+            
+            // Lógica ajustada para que reaccione mejor al centro de la tarjeta
+            const distanceX = Math.abs(relativeMouseX - rect.width / 2)
+            const distanceY = Math.abs(relativeMouseY - rect.height / 2)
+            const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY)
+            
+            const maxDistance = rect.width;
+            const revealIntensity = Math.max(0, 1 - (distance / maxDistance))
+
             setTileState({
-                opacity: mouseXAsDecimal,
-                blur: (1 - mouseXAsDecimal) * 10,
+                opacity: revealIntensity,
+                blur: (1 - revealIntensity) * 10,
             })
         }
         updateTileState()
@@ -123,15 +122,17 @@ export function MagicWandTile({ image, icon, className, onClick }: MagicWandTile
             ref={tileRef}
             onClick={onClick}
             className={cn(
-                "tile grid place-items-center w-[38vmin] aspect-square bg-[rgb(31,41,55)] rounded-[6vmin] shadow-[0vmin_3vmin_6vmin_rgba(0,0,0,0.25),inset_0vmin_0.5vmin_1vmin_rgba(255,255,255,0.15)] relative overflow-hidden",
+                "tile grid place-items-center w-full max-w-[40vmin] aspect-square bg-stone-900 border border-stone-800 rounded-3xl relative overflow-hidden transition-all duration-300 hover:border-stone-600 hover:scale-[1.02]",
                 className,
             )}
         >
-            <IconComponent className={iconClassName} />
+            <div className="z-10 bg-stone-950/60 p-4 rounded-full backdrop-blur-md">
+                <IconComponent className={iconClassName} />
+            </div>
             <motion.img
                 src={image}
-                alt="Tile image"
-                className="h-full aspect-square absolute left-0 top-0 object-cover"
+                alt="Diseño floral"
+                className="h-full w-full absolute left-0 top-0 object-cover"
                 style={{
                     opacity: tileState.opacity,
                     filter: `blur(${tileState.blur}px)`,
